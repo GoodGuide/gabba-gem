@@ -99,6 +99,26 @@ describe Gabba::Gabba do
     end
   end
 
+  describe "when tracking with a campaign" do
+    before do
+      @gabba = Gabba::Gabba.new("abc", "123")
+      @gabba.utmn = "1009731272"
+      @gabba.campaign_params = {
+        source: 'source',
+        medium: 'email',
+        name: 'name'
+      }
+
+      stub_analytics @gabba.page_view_params("title", "/page/path", "6783939397")
+    end
+
+    it 'must add campaign params' do
+      utmcc = @gabba.page_view_params("title", "/page/path", "6783939397")[:utmcc]
+      assert_match /tmcsr=source\|utmccn=name\|utmcmd=email/, utmcc
+    end
+
+  end
+
   def stub_analytics(expected_params)
     s = stub_request(:get, /www.google-analytics.com\/__utm.gif\?utmac=#{expected_params[:utmac]}&.*/).
           to_return(:status => 200, :body => "", :headers => {})

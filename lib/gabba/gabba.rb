@@ -15,7 +15,8 @@ module Gabba
     BEACON_PATH = "/__utm.gif"
     USER_AGENT = "Gabba #{VERSION} Agent"
     
-    attr_accessor :utmwv, :utmn, :utmhn, :utmcs, :utmul, :utmdt, :utmp, :utmac, :utmt, :utmcc, :user_agent
+    attr_accessor :utmwv, :utmn, :utmhn, :utmcs, :utmul, :utmdt, 
+      :utmp, :utmac, :utmt, :utmcc, :user_agent, :campaign_params
     
     def initialize(ga_acct, domain, agent = Gabba::USER_AGENT)
       @utmwv = "4.4sh" # GA version
@@ -144,7 +145,27 @@ module Gabba
   
     # create magical cookie params used by GA for its own nefarious purposes
     def cookie_params(utma1 = random_id, utma2 = rand(1147483647) + 1000000000, today = Time.now)
-      "__utma=1.#{utma1}00145214523.#{utma2}.#{today.to_i}.#{today.to_i}.15;+__utmz=1.#{today.to_i}.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none);"
+      "__utma=1.#{utma1}00145214523.#{utma2}.#{today.to_i}.#{today.to_i}.15;+__utmz=1.#{today.to_i}.1.1.#{campaign};"
+    end
+
+    def campaign
+      return 'utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)' unless campaign_params
+
+      # See http://code.google.com/p/gaforflash/source/browse/trunk/src/com/google/analytics/campaign/CampaignTracker.as#236
+      campaign_data = {
+        'utmcid'   => campaign_params[:id],
+        'utmcsr'   => campaign_params[:source],
+        'utmgclid' => campaign_params[:glick_id],
+        'utmdclid' => campaign_params[:dclick_id],
+        'utmccn'   => campaign_params[:name],
+        'utmcmd'   => campaign_params[:medium],
+        'utmctr'   => campaign_params[:term],
+        'utmcct'   => campaign_params[:content],
+      }
+
+      campaign_data.map do |key, value|
+        key + '=' + value.gsub(/ |\+/, '%20') if value
+      end.compact.join('|')
     end
 
     # sanity check that we have needed params to even call GA
